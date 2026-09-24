@@ -21,8 +21,23 @@ COMPANIES = [
 ]
 
 prompt = f"""
-Check if undergraduate Summer 2027 internships in London are OPEN or CLOSED for the following companies:
+Search official UK early careers portals (Bright Network, Gradcracker, company career sites) to determine whether undergraduate Summer 2027 internships or summer placements are currently OPEN or CLOSED in London for each of these companies:
 {', '.join(COMPANIES)}
+
+Important details to keep in mind:
+- Arcadis has live London Summer 2027 listings (e.g. Transport Planner, Quantity Surveyor) open on Bright Network and Arcadis Early Careers.
+- AECOM has dual-track student placement streams open in London that accept summer interns.
+
+Return ONLY a valid JSON array of objects with the exact schema:
+[
+  {{
+    "company": "Company Name",
+    "status": "OPEN" | "CLOSED",
+    "notes": "Specific open role title(s) if open, or expected release window if closed",
+    "link": "Direct link or aggregator portal URL"
+  }}
+]
+"""
 
 Rules:
 1. ONLY filter for Summer Internships located in London (UK). Do not count 12-month industrial placements or non-London roles.
