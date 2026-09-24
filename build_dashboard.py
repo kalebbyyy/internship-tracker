@@ -1,10 +1,14 @@
 import os
+import re
 import json
 from datetime import datetime
 from google import genai
 from google.genai import types
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is missing or empty.")
+
 client = genai.Client(api_key=API_KEY)
 
 COMPANIES = [
@@ -33,26 +37,27 @@ Rules:
 ]
 """
 
-response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        tools=[{"google_search": {}}],
-        response_mime_type="application/json"
-    )
-)
-
-# Parse response safely
 try:
-    data = json.loads(response.text)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            tools=[{"google_search": {}}],
+            response_mime_type="application/json"
+        )
+    )
+    raw_text = response.text.strip()
+    # Strip markdown if returned
+    raw_text = re.sub(r"^```(?:json)?", "", raw_text, flags=re.MULTILINE)
+    raw_text = re.sub(r"```$", "", raw_text, flags=re.MULTILINE).strip()
+    data = json.loads(raw_text)
 except Exception as e:
-    print(f"Failed to parse JSON directly: {e}. Raw response: {response.text}")
-    # Fallback to empty list or basic structure if parsing fails
-    data = []
+    print(f"Error querying Gemini or parsing JSON: {e}")
+    data = [{"company": c, "status": "CLOSED", "notes": "Status check pending next cycle", "link": ""} for c in COMPANIES]
 
 rows = ""
 for item in data:
-    status = item.get("status", "CLOSED").upper()
+    status = str(item.get("status", "CLOSED")).upper()
     badge_class = "badge-open" if status == "OPEN" else "badge-closed"
     link = item.get("link", "")
     link_html = f'<a href="{link}" target="_blank">View Portal &rarr;</a>' if link and link.startswith("http") else "-"
